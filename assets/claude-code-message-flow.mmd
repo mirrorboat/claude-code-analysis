@@ -1,0 +1,51 @@
+sequenceDiagram
+  autonumber
+
+  actor User
+  participant PI as processUserInput()
+  participant QE as QueryEngine
+  participant QC as query()
+  participant CTX as system/user context builders
+  participant API as services/api/claude.ts
+  participant Model as Anthropic model
+  participant TR as tool runtime
+  participant ST as AppState / task state
+
+  par Direct user input
+    User->>PI: prompt / slash command / attachment
+  and Background event
+    ST-->>PI: hook / task / remote notification
+  and Background agent completion
+    ST-->>QE: task completion message
+  end
+
+  PI->>PI: resolve command, attachments, hooks
+  PI->>QE: append internal Message objects
+  QE->>QC: submitMessage()
+
+  QC->>CTX: build systemPrompt + userContext + systemContext
+  CTX-->>QC: normalized prompt prefix
+  QC->>API: normalizeMessagesForAPI() + build request
+  API->>Model: stream conversation turn
+
+  loop until stop / compact / error
+    Model-->>API: assistant text / tool_use / stop signal
+    API-->>QC: stream event
+
+    alt assistant text only
+      QC->>QE: append assistant Message
+    else tool_use blocks
+      QC->>TR: permission check
+      TR->>TR: toolOrchestration / StreamingToolExecutor
+      TR->>ST: side effects (fs / shell / mcp / network)
+      TR-->>QC: tool_result / progress / synthetic error
+      QC->>QE: append tool_result Message
+      QC->>ST: update AppState / task state / permissions
+      QC->>API: send updated transcript for next turn
+    else stop / recovery / compaction
+      QC->>ST: update budgets / compact state / recovery state
+      QC->>QE: append control messages if needed
+    end
+  end
+
+  Note over QE,ST: The loop is message-driven, not function-call-driven.\nEvery new event is converted into messages, then fed back into the next model turn.
