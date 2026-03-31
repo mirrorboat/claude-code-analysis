@@ -158,8 +158,3 @@ by CodeX
 - 这是多 Agent / teammate 编排层，负责 backend 选择、tmux/iTerm/in-process backend 探测、spawn、重连、权限同步、布局管理和 teammate 初始化。[utils/swarm/backends/registry.ts](src/utils/swarm/backends/registry.ts#L1)
 - 它最关键的职责是决定“多 Agent 跑在哪里”：tmux、iTerm2、in-process，还是 fallback。
 - 这个目录说明 Claude Code 不只是单 agent 推理器，而是有完整的 swarm/teammate 运行模型。
-
-**我建议你下一步继续看这 3 组**
-1. `components/messages` + `components/permissions` + `components/PromptInput`，这三块能把终端交互链路看透。
-2. `tools/AgentTool` + `tools/BashTool` + `utils/permissions`，这三块能把执行、安全和多 agent 分配看透。
-3. `services/mcp` + `utils/plugins` + `utils/swarm`，这三块能把扩展生态和协作机制看透。
